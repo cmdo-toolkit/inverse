@@ -1,6 +1,6 @@
 {
   "name": "cmdo-inverse",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "description": "A simple dependency injection service.",
   "author": "Christoffer Rødvik <dev@kodemon.net>",
   "license": "MIT",
@@ -32,7 +32,7 @@
   "scripts": {
     "prepublishOnly": "npm run lint && npm run build",
     "build": "npm run clean && npm run build:esm && npm run build:cjs",
-    "build:esm": "./node_modules/.bin/tsc --project tsconfig-esm.json && ./node_modules/.bin/cmdo output esm -f esm",
+    "build:esm": "./node_modules/.bin/tsc --project tsconfig.json && ./node_modules/.bin/cmdo output esm -f esm",
     "build:cjs": "./node_modules/.bin/tsc --project tsconfig-cjs.json",
     "clean": "rm -rf ./cjs ./esm ./types",
     "lint": "./node_modules/.bin/eslint 'src/**/*.ts'",

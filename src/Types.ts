@@ -12,3 +12,7 @@ export type Token<C = unknown, T = unknown> = {
   ctor: C;
   type: T;
 };
+
+export type Filter<T> = (context: T) => boolean;
+
+export type JSON = Record<string, unknown>;

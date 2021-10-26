@@ -5,3 +5,9 @@ export class Ninja implements WarriorService {
     return "slice";
   }
 }
+
+export class Kunoichi implements WarriorService {
+  public attack() {
+    return "dice";
+  }
+}
