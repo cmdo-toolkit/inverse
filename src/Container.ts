@@ -1,5 +1,5 @@
 import { MissingChildContainerError, MissingDependencyError } from "./Errors";
-import { Constructor, ConstructorArgs, Filter, JSON, Tokens } from "./Types";
+import type { Filter, JSON, Tokens } from "./Types";
 
 /**
  * A simple dependency injection service using inversion of control principles
@@ -9,26 +9,53 @@ import { Constructor, ConstructorArgs, Filter, JSON, Tokens } from "./Types";
  * @author  Christoffer Rødvik <dev@kodemon.net>
  * @license MIT
  */
-export class Container<T extends Tokens, C extends JSON = JSON> {
-  public readonly providers: Map<keyof T, unknown> = new Map();
-  public readonly container: Map<C, Container<T, C>> = new Map();
+export class Container<T extends Tokens<T>, C extends JSON = JSON> {
+  public readonly providers: Map<keyof T, T[keyof T]> = new Map();
+  public readonly contexts: Map<C, Container<T, C>> = new Map();
+
+  /*
+   |--------------------------------------------------------------------------------
+   | Contexts
+   |--------------------------------------------------------------------------------
+   |
+   | A container can have one or more contexts which represents a cloned version of
+   | the parent container. A context container is usually useful for when you want 
+   | different types of the same provider to exist within the same dependency scope
+   | under a unique filterable context.
+   |
+   */
 
   /**
-   * Create or retrieve a container based on a specific sub context.
+   * Create a new container with the given context object. A context is an object
+   * we provide to the .where method used to query the container assigned to the
+   * given context object.
+   *
+   * @param context - Context object used to filter future .where requests.
    */
-  public where(context: C): Container<T, C>;
-  public where(filter: Filter<C>): Container<T, C>;
-  public where(contextOrFilter: C | Filter<C>): Container<T, C> {
-    if (typeof contextOrFilter === "function") {
-      for (const context of Array.from(this.container.keys())) {
-        if (contextOrFilter(context)) {
-          return this.container.get(context) as Container<T, C>;
-        }
-      }
-      throw new MissingChildContainerError();
-    }
-    return this.container.set(contextOrFilter, new Container<T, C>()).get(contextOrFilter) as Container<T, C>;
+  public createContext(context: C): Container<T, C> {
+    return this.contexts.set(context, new Container<T, C>()).get(context) as Container<T, C>;
   }
+
+  /**
+   * Create or retrieve a container based on a specific context container.
+   *
+   * @param filter - Method which receives the container context object used to
+   *                 filter the specific container we want to operate on.
+   */
+  public where(filter: Filter<C>): Container<T, C> {
+    for (const context of Array.from(this.contexts.keys())) {
+      if (filter(context)) {
+        return this.contexts.get(context) as Container<T, C>;
+      }
+    }
+    throw new MissingChildContainerError();
+  }
+
+  /*
+   |--------------------------------------------------------------------------------
+   | Utilities
+   |--------------------------------------------------------------------------------
+   */
 
   /**
    * Check if a token has been registered in the singleton or transient map
@@ -46,9 +73,7 @@ export class Container<T extends Tokens, C extends JSON = JSON> {
    * @param token    - Token to register.
    * @param provider - Provider to register under the given token.
    */
-  public set<K extends keyof T>(token: K, provider: Constructor<T[K]["type"]>): this;
-  public set<K extends keyof T>(token: K, provider: T[K]["type"]): this;
-  public set<K extends keyof T>(token: K, provider: Constructor<T[K]["type"]> | T[K]["type"]): this {
+  public set<K extends keyof T>(token: K, provider: T[K]): this {
     this.providers.set(token, provider);
     return this;
   }
@@ -59,14 +84,15 @@ export class Container<T extends Tokens, C extends JSON = JSON> {
    * @param token - Token to retrieve dependency for.
    * @param args  - Arguments to pass to a transient provider.
    */
-  public get<K extends keyof T>(token: K, ...args: ConstructorArgs<T[K]["ctor"]>): T[K]["type"] {
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  public get<K extends keyof T>(token: K, ...args: ConstructorParameters<T[K]>): T[K] extends Function ? InstanceType<T[K]> : T[K] {
     const provider = this.providers.get(token);
     if (!provider) {
       throw new MissingDependencyError(token);
     }
     if (typeof provider === "function") {
-      return new (provider as Constructor<T>)(...args);
+      return new (provider as any)(...(args as any));
     }
-    return provider as T[K]["type"];
+    return provider;
   }
 }

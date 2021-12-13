@@ -1,18 +1,25 @@
-export type Constructor<T> = {
-  new (...args: any[]): T;
+/*
+ |--------------------------------------------------------------------------------
+ | Tokens
+ |--------------------------------------------------------------------------------
+ */
+
+export type Tokens<T> = {
+  [K in keyof T]: T[K];
 };
 
-export type ConstructorArgs<T> = T extends new (...args: infer U) => any ? U : never;
-
-export type Tokens = {
-  [token: string]: Token;
-};
-
-export type Token<C = unknown, T = unknown> = {
-  ctor: C;
-  type: T;
-};
+/*
+ |--------------------------------------------------------------------------------
+ | Contexts
+ |--------------------------------------------------------------------------------
+ */
 
 export type Filter<T> = (context: T) => boolean;
+
+/*
+ |--------------------------------------------------------------------------------
+ | Common
+ |--------------------------------------------------------------------------------
+ */
 
 export type JSON = Record<string, unknown>;
